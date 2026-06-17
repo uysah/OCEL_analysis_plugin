@@ -1,0 +1,13 @@
+[project]
+name = "ocel_analysis"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "ocelescope",
+]
+
+
+[tool.uv.sources]
+ocelescope = { git = "https://github.com/promi4s/ocelescope.git", subdirectory = "src/ocelescope" }
