@@ -10,8 +10,8 @@ from ocelescope import (
     Table,
     TableColumn
 )
-from .input import ActivityFrequencyInput, EventAttribute
-from .resource import ActivityDistribution, EventAttributePlot
+from .input import ActivityFrequencyInput, AttributeInput
+from .resource import ActivityDistribution, AttributePlot
 from .util import activity_distribution, event_attributes_time, event_attribute_frequency
 
 
@@ -31,14 +31,15 @@ class OCELAnalysis(Plugin):
     ) -> ActivityDistribution:
         return activity_distribution(ocel, input)
 
-    @plugin_method(label="Event Attribute Analysis", description="Analyze Event Attribute Values over time")
+    @plugin_method(label="Attribute Analysis", description="Analyze Event and Object Attribute Values over Time and Frequency")
     def event_attribute_values(
         self,
         ocel: Annotated[OCEL, OCELAnnotation(label="Event Log")],
-        input: EventAttribute,
-    ) -> EventAttributePlot:
+        input: AttributeInput,
+    ) -> AttributePlot:
         if input.analysis_type == 'Time':
             return event_attributes_time(ocel, input)  
         elif input.analysis_type == 'Frequency':
             return event_attribute_frequency(ocel,input)
+        
 

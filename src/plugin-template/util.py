@@ -1,6 +1,6 @@
 from ocelescope import OCEL
-from .input import ActivityFrequencyInput, EventAttribute
-from .resource import ActivityDistribution, EventAttributePlot
+from .input import ActivityFrequencyInput, AttributeInput
+from .resource import ActivityDistribution, AttributePlot
 import numpy as np
 import pandas as pd
 #========================================
@@ -34,47 +34,51 @@ def activity_distribution(ocel:OCEL, input: ActivityFrequencyInput) -> ActivityD
 
 
 #========================================
-#          Event Attribute 
+#              Attribute 
 #========================================
 
-def event_attributes_time(ocel:OCEL,input: EventAttribute) -> EventAttributePlot:
-    plot = EventAttributePlot()
+def event_attributes_time(ocel:OCEL,input: AttributeInput) -> AttributePlot:
+    plot = AttributePlot()
     attribute_table = ocel.events.df
-    data_df = attribute_table[attribute_table['ocel:activity'] == input.event_type][[input.event_attribute,'ocel:timestamp']]
+    event_type = input.selection.selected_type
+    event_attribute = input.selection.event_attribute
+    data_df = attribute_table[attribute_table['ocel:activity'] == event_type][[event_attribute,'ocel:timestamp']]
     data_df.rename(columns=
         {
             "ocel:timestamp": "Timestamp",
-            input.event_attribute: "Value"
+            event_attribute: "Value"
         },inplace=True
     )
 
-    plot.event_type = input.event_type
-    plot.event_attribute = input.event_attribute
+    plot.event_type = event_type
+    plot.event_attribute = event_attribute
     plot.attribute_table = data_df.to_dict(orient='records')
     plot.analysis_type = input.analysis_type
     return plot
 
-def event_attribute_frequency(ocel:OCEL,input: EventAttribute) -> EventAttributePlot:
-    plot = EventAttributePlot()
+def event_attribute_frequency(ocel:OCEL,input: AttributeInput) -> AttributePlot:
+    plot = AttributePlot()
     attribute_table = ocel.events.df
-    series = attribute_table[attribute_table["ocel:activity"] == input.event_type][input.event_attribute]
+    event_type = input.selection.selected_type
+    event_attribute = input.selection.event_attribute
+    series = attribute_table[attribute_table["ocel:activity"] == event_type][event_attribute]
 
     nan_count = series.isna().sum()
     series = series.dropna()
 
-    plot.event_type = input.event_type
-    plot.event_attribute = input.event_attribute
+    plot.event_type = event_type
+    plot.event_attribute = event_attribute
     plot.analysis_type = input.analysis_type
     plot.nan_count = nan_count
 
     if pd.api.types.is_numeric_dtype(series):
         plot.data_type = "numerical"
-        plot.attribute_table = [{input.event_attribute: float(v)} for v in series]
+        plot.attribute_table = [{event_attribute: float(v)} for v in series]
 
     else:
         plot.data_type = "categorical"
         counts = (series.value_counts().reset_index())
-        counts.columns = [input.event_attribute, "Count"]
+        counts.columns = [event_attribute, "Count"]
         plot.attribute_table = counts.to_dict(orient="records")
 
     return plot

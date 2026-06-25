@@ -1,6 +1,6 @@
 from ocelescope import COMPUTED_SELECTION, OCEL, PluginInput, OCEL_FIELD
 from typing import Literal
-from pydantic import Field
+from pydantic import Field, BaseModel
 #========================================
 #          Activitiy Frequency
 #========================================
@@ -26,35 +26,84 @@ class ActivityFrequencyInput(PluginInput):
     #     ids = ocel.objects.df.loc[ocel.objects.df["ocel:type"] == object_type,"ocel:oid"].tolist()
     #     return ["All"] + ids
     
+
+
 #========================================
-#          Event Attributes
+#          Attributes
 #========================================
 
 
-
-
-class EventAttribute(PluginInput):
-    event_type: str = OCEL_FIELD(
-        field_type="event_type",
-        title="Event Type",
-        ocel_id="ocel",
-        description="The type of the event that should be analyzed",
+class EventTypeSelection(BaseModel):
+    class Config:
+        title = "Event"
+    
+    selected_type: str = COMPUTED_SELECTION(
+        title="Activity",
+        provider='compute_event_types',
+        depends_on=[],
     )
-
     event_attribute: str = COMPUTED_SELECTION(
-        provider="computed_event_attribute",
-        depends_on=["event_type"]
+        title="Attribute",
+        provider='computed_event_attribute',
+        depends_on=['selected_type'],
     )
 
-    analysis_type: Literal['Time', 'Frequency'] = Field(title="Analysis Type", description="Analyze frequency or time behavior of event attributes", default='Time')
+class ObjectTypeSelection(BaseModel):
+    class Config:
+        title = "Object"
+    
+    selected_type: str = COMPUTED_SELECTION(
+        title="Object Type",
+        provider='compute_object_types',
+        depends_on=[],
+    )
+    selected_activity: str = COMPUTED_SELECTION(
+        title="Activity",
+        provider='compute_selected_activity',
+        depends_on=['selected_type'],
+    )
+    event_attribute: str = COMPUTED_SELECTION(
+        title="Attribute",
+        provider='computed_object_attribute',
+        depends_on=['selected_type'],
+    )
+
+class AttributeInput(PluginInput):
+    selection: EventTypeSelection | ObjectTypeSelection
+
+    analysis_type: Literal['Time', 'Frequency'] = Field(
+        title="Analysis Type",
+        default='Frequency'
+    )
 
     @staticmethod
-    def computed_event_attribute(ocel: OCEL, input:dict):
-        event_type = input.get('event_type')
-        attribute_table = ocel.events.df
-        attribute_table = attribute_table[attribute_table['ocel:activity'] == event_type]
-        event_attributes = [
-            col for col in attribute_table.dropna(axis=1, how='all').columns.tolist()
-            if col not in {'ocel:eid', 'ocel:activity', 'ocel:timestamp'}
-        ]
-        return event_attributes
+    def compute_event_types(ocel: OCEL, input: dict):
+        return ocel.events.df['ocel:activity'].unique().tolist()
+
+    @staticmethod
+    def compute_object_types(ocel: OCEL, input: dict):
+        return ocel.objects.df['ocel:type'].unique().tolist()
+
+    @staticmethod
+    def compute_selected_activity(ocel: OCEL, input: dict):
+        selected_type = input['selection']['selected_type']
+        activitites = list(ocel.e2o.df[ocel.e2o.df['ocel:type'] == selected_type]['ocel:activity'].unique())
+        return activitites
+    @staticmethod
+    def computed_event_attribute(ocel: OCEL, input: dict):
+        print(input)
+        selected_type = input['selection']['selected_type']
+        if not selected_type:
+            return []
+        df = ocel.events.df[ocel.events.df['ocel:activity'] == selected_type]
+        exclude = {'ocel:eid', 'ocel:activity', 'ocel:timestamp'}
+        return [c for c in df.dropna(axis=1, how='all').columns if c not in exclude]
+
+    @staticmethod
+    def computed_object_attribute(ocel: OCEL, input: dict):
+        selected_type = input['selection']['selected_type']
+        if not selected_type:
+            return []
+        df = ocel.objects.df[ocel.objects.df['ocel:type'] == selected_type]
+        exclude = {'ocel:oid', 'ocel:type', 'ocel:timestamp'}
+        return [c for c in df.dropna(axis=1, how='all').columns if c not in exclude]

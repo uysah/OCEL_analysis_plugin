@@ -19,7 +19,7 @@ CHART_COLOURS = [
 
 
 class ActivityDistribution(Resource):
-    label = "Bar Chart"
+    label = "Stacked Bar Chart"
     description = "Activity Distribution per Object Type"
 
     object_type: str = ''
@@ -58,12 +58,12 @@ class ActivityDistribution(Resource):
         return Plotly(figure=fig)
      
 #========================================
-#          Event Attribute 
+#               Attribute 
 #========================================
 
 
-class EventAttributePlot(Resource):
-    label = "Line Chart"
+class AttributePlot(Resource):
+    label = "Line and Bar Chart"
     description = 'Time Analysis of Event Attribute Values'
 
     event_type: str = ''
