@@ -23,7 +23,7 @@ class OCELAnalysis(Plugin):
     description = "A Plugin to analyze Object-Centric Event Logs"
     version = "0.1.0"
 
-    @plugin_method(label="Activity Distribution per Object Type", description="Analyze Acitivity Frequencies per Object Type")
+    @plugin_method(label="Iterations of Activities for Single Object Types", description="Analyze Acitivity Frequencies per Object Type")
     def activity_distribution_method(
         self,
         ocel: Annotated[OCEL, OCELAnnotation(label="Event Log")],

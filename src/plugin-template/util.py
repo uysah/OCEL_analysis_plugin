@@ -12,17 +12,24 @@ def activity_distribution(ocel:OCEL, input: ActivityFrequencyInput) -> ActivityD
     x.object_type = input.object_type
     relation_df = ocel.e2o.df
 
-    if input.object_id == 'All':
-        df_filtered = relation_df.loc[relation_df['ocel:type'] == input.object_type]
-        counts = df_filtered['ocel:activity'].value_counts().reset_index()
-        counts.columns = ['Activity', 'Count']
-    else:
-        df_filtered = relation_df.loc[(relation_df['ocel:type'] == x.object_type) & (relation_df['ocel:oid'] == input.object_id)]
-        counts = df_filtered['ocel:activity'].value_counts().reset_index()
-        counts.columns = ['Activity', 'Count']
-        x.object_id == input.object_id
+    df_filtered = relation_df.loc[relation_df['ocel:type'] == input.object_type]
+    object_activity_counts = (
+        df_filtered.groupby(["ocel:oid", "ocel:activity"])
+        .size()
+        .reset_index(name="iterations")
+    )
+    object_activity_counts.rename(columns={
+        "ocel:activity": "Activity",
+        "iterations": "Execution No."
+    },inplace=True)
+    distribution = (
+        object_activity_counts
+        .groupby(["Activity", "Execution No."])
+        .size()
+        .reset_index(name="count")
+    )
 
-    x.relation_df = counts.to_dict(orient='records')
+    x.relation_df = distribution.to_dict(orient='records')
     return x
 
 
@@ -50,14 +57,18 @@ def event_attributes_time(ocel:OCEL,input: EventAttribute) -> EventAttributePlot
 def event_attribute_frequency(ocel:OCEL,input: EventAttribute) -> EventAttributePlot:
     plot = EventAttributePlot()
     attribute_table = ocel.events.df
-    series = (attribute_table[attribute_table["ocel:activity"] == input.event_type][input.event_attribute].dropna())
+    series = attribute_table[attribute_table["ocel:activity"] == input.event_type][input.event_attribute]
+
+    nan_count = series.isna().sum()
+    series = series.dropna()
 
     plot.event_type = input.event_type
     plot.event_attribute = input.event_attribute
     plot.analysis_type = input.analysis_type
+    plot.nan_count = nan_count
 
     if pd.api.types.is_numeric_dtype(series):
-        plot.data_type = "continuous"
+        plot.data_type = "numerical"
         plot.attribute_table = [{input.event_attribute: float(v)} for v in series]
 
     else:
