@@ -48,6 +48,11 @@ class EventTypeSelection(BaseModel):
         depends_on=['selected_type'],
     )
 
+    analysis_type: Literal['Time', 'Frequency'] = Field(
+        title="Analysis Type",
+        default='Time'
+    )
+
 class ObjectTypeSelection(BaseModel):
     class Config:
         title = "Object"
@@ -71,10 +76,6 @@ class ObjectTypeSelection(BaseModel):
 class AttributeInput(PluginInput):
     selection: EventTypeSelection | ObjectTypeSelection
 
-    analysis_type: Literal['Time', 'Frequency'] = Field(
-        title="Analysis Type",
-        default='Frequency'
-    )
 
     @staticmethod
     def compute_event_types(ocel: OCEL, input: dict):
@@ -91,10 +92,7 @@ class AttributeInput(PluginInput):
         return activitites
     @staticmethod
     def computed_event_attribute(ocel: OCEL, input: dict):
-        print(input)
         selected_type = input['selection']['selected_type']
-        if not selected_type:
-            return []
         df = ocel.events.df[ocel.events.df['ocel:activity'] == selected_type]
         exclude = {'ocel:eid', 'ocel:activity', 'ocel:timestamp'}
         return [c for c in df.dropna(axis=1, how='all').columns if c not in exclude]
@@ -102,8 +100,6 @@ class AttributeInput(PluginInput):
     @staticmethod
     def computed_object_attribute(ocel: OCEL, input: dict):
         selected_type = input['selection']['selected_type']
-        if not selected_type:
-            return []
         df = ocel.objects.df[ocel.objects.df['ocel:type'] == selected_type]
         exclude = {'ocel:oid', 'ocel:type', 'ocel:timestamp'}
         return [c for c in df.dropna(axis=1, how='all').columns if c not in exclude]

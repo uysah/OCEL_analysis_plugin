@@ -10,9 +10,9 @@ from ocelescope import (
     Table,
     TableColumn
 )
-from .input import ActivityFrequencyInput, AttributeInput
+from .input import ActivityFrequencyInput, AttributeInput, EventTypeSelection, ObjectTypeSelection
 from .resource import ActivityDistribution, AttributePlot
-from .util import activity_distribution, event_attributes_time, event_attribute_frequency
+from .util import activity_distribution, event_attributes_time, event_attribute_frequency, object_attribute_frequency
 
 
 
@@ -21,9 +21,9 @@ from .util import activity_distribution, event_attributes_time, event_attribute_
 class OCELAnalysis(Plugin):  
     label = "OCEL Analysis"
     description = "A Plugin to analyze Object-Centric Event Logs"
-    version = "0.1.0"
+    version = "1.0"
 
-    @plugin_method(label="Iterations of Activities for Single Object Types", description="Analyze Acitivity Frequencies per Object Type")
+    @plugin_method(label="Iterations of Activities for Single Object Types", description="Analyze Iterations of Activities per Object Type")
     def activity_distribution_method(
         self,
         ocel: Annotated[OCEL, OCELAnnotation(label="Event Log")],
@@ -37,9 +37,13 @@ class OCELAnalysis(Plugin):
         ocel: Annotated[OCEL, OCELAnnotation(label="Event Log")],
         input: AttributeInput,
     ) -> AttributePlot:
-        if input.analysis_type == 'Time':
-            return event_attributes_time(ocel, input)  
-        elif input.analysis_type == 'Frequency':
-            return event_attribute_frequency(ocel,input)
+        if isinstance(input.selection, EventTypeSelection):
+            if input.selection.analysis_type == 'Time':
+                return event_attributes_time(ocel, input)  
+            elif input.selection.analysis_type == 'Frequency':
+                return event_attribute_frequency(ocel,input)
+            
+        elif isinstance(input.selection, ObjectTypeSelection):
+                return object_attribute_frequency(ocel, input)
         
 

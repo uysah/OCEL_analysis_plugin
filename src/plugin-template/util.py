@@ -53,7 +53,7 @@ def event_attributes_time(ocel:OCEL,input: AttributeInput) -> AttributePlot:
     plot.event_type = event_type
     plot.event_attribute = event_attribute
     plot.attribute_table = data_df.to_dict(orient='records')
-    plot.analysis_type = input.analysis_type
+    plot.analysis_type = input.selection.analysis_type
     return plot
 
 def event_attribute_frequency(ocel:OCEL,input: AttributeInput) -> AttributePlot:
@@ -68,7 +68,7 @@ def event_attribute_frequency(ocel:OCEL,input: AttributeInput) -> AttributePlot:
 
     plot.event_type = event_type
     plot.event_attribute = event_attribute
-    plot.analysis_type = input.analysis_type
+    plot.analysis_type = input.selection.analysis_type
     plot.nan_count = nan_count
 
     if pd.api.types.is_numeric_dtype(series):
@@ -83,7 +83,36 @@ def event_attribute_frequency(ocel:OCEL,input: AttributeInput) -> AttributePlot:
 
     return plot
 
+def object_attribute_frequency(ocel: OCEL, input: AttributeInput) -> AttributePlot:
+    plot = AttributePlot()
+    object_type = input.selection.selected_type
+    activity = input.selection.selected_activity
+    object_attribute = input.selection.event_attribute
 
-    
+    e2o = ocel.e2o.df
+    relevant_e2o = e2o[(e2o["ocel:type"] == object_type) & (e2o["ocel:activity"] == activity)][["ocel:eid", "ocel:oid"]]
+    obj_df = ocel.objects.df[ocel.objects.df["ocel:type"] == object_type][["ocel:oid", object_attribute]]
+    merged = relevant_e2o.merge(obj_df, on="ocel:oid", how="left")
+
+    series = merged[object_attribute]
+    nan_count = int(series.isna().sum())
+    series = series.dropna()
+
+    plot.object_type = object_type
+    plot.selected_activity = activity
+    plot.event_attribute = object_attribute
+    plot.analysis_type = "Frequency"
+    plot.nan_count = nan_count
+
+    if pd.api.types.is_numeric_dtype(series):
+        plot.data_type = "numerical"
+        plot.attribute_table = [{object_attribute: float(v)} for v in series]
+    else:
+        plot.data_type = "categorical"
+        counts = series.value_counts().reset_index()
+        counts.columns = [object_attribute, "Count"]
+        plot.attribute_table = counts.to_dict(orient="records")
+
+    return plot
 
 

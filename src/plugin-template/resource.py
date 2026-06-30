@@ -72,66 +72,81 @@ class AttributePlot(Resource):
     analysis_type: str = ''
     data_type: str = ''
     nan_count: int = 0
+    object_type: str = ''
+    selected_activity: str = ''
 
-    def visualize(self)-> Plotly:
+
+    def _title(self) -> str:
+        if self.object_type:
+            return (
+                f"Attribute Value Distribution of {self.event_attribute} "
+                f"for {self.object_type} objects at activity '{self.selected_activity}'"
+            )
+        if self.analysis_type == 'Time':
+            return f"Time Analysis of {self.event_attribute} for Event Type {self.event_type}"
+        return (
+            f"Attribute Value Distribution of {self.event_attribute} "
+            f"for Event Type {self.event_type}"
+        )
+
+    def visualize(self) -> Plotly:
+        title = self._title()
+
         if self.analysis_type == 'Time':
             fig = px.line(
                 self.attribute_table,
                 x="Timestamp",
                 y="Value",
-                title=f"Time Analysis of Attribute Values of {self.event_attribute} for Event Type {self.event_type}",
+                title=title,
             )
 
         elif self.analysis_type == "Frequency":
-                    df = pd.DataFrame(self.attribute_table)
-                    if self.nan_count > 0:
-                        nan_row = pd.DataFrame([{self.event_attribute: "NaN", "Count": self.nan_count}])
-                        df = pd.concat([df, nan_row], ignore_index=True)
-                    if self.data_type == "categorical":
-                        fig = px.bar(
-                            df,
-                            x=self.event_attribute,
-                            y="Count",
-                            title=(
-                                f"Attribute Value Distribution of {self.event_attribute} "
-                                f"for Event Type {self.event_type}"
-                            ),
-                        )
+            df = pd.DataFrame(self.attribute_table)
+            if self.nan_count > 0:
+                nan_row = pd.DataFrame([{self.event_attribute: "NaN", "Count": self.nan_count}])
+                df = pd.concat([df, nan_row], ignore_index=True)
 
-                    elif self.data_type == "numerical":
-                        values = df[self.event_attribute].astype(float)
-                        
-                        unique_vals = values.nunique()
-                        val_range = values.max() - values.min()
+            if self.data_type == "categorical":
+                fig = px.bar(
+                    df,
+                    x=self.event_attribute,
+                    y="Count",
+                    title=title,
+                )
 
-                        if unique_vals == 1 or val_range == 0:
-                            fig = px.bar(
-                                x=[str(values.iloc[0])],
-                                y=[len(values)],
-                                labels={"x": self.event_attribute, "y": "Count"},
-                                title=f"Attribute Value Distribution of {self.event_attribute} for Event Type {self.event_type} (all values identical)",
-                            )
-                        else:
-                            n = len(values)
-                            q25, q75 = np.percentile(values, [25, 75])
-                            iqr = q75 - q25
+            elif self.data_type == "numerical":
+                values = df[self.event_attribute].astype(float)
+                unique_vals = values.nunique()
+                val_range = values.max() - values.min()
 
-                            if iqr > 0:
-                                bin_width = 2 * iqr / (n ** (1 / 3))
-                                nbins = max(1, int(np.ceil(val_range / bin_width)))
-                            else:
-                                nbins = int(np.ceil(np.log2(n) + 1))
+                if unique_vals == 1 or val_range == 0:
+                    fig = px.bar(
+                        x=[str(values.iloc[0])],
+                        y=[len(values)],
+                        labels={"x": self.event_attribute, "y": "Count"},
+                        title=title,
+                    )
+                else:
+                    n = len(values)
+                    q25, q75 = np.percentile(values, [25, 75])
+                    iqr = q75 - q25
 
-                            bin_size = val_range / nbins if nbins > 0 else val_range
-                            fig = px.histogram(
-                                df, x=self.event_attribute,
-                                title=f"Attribute Value Distribution of {self.event_attribute} for {self.event_type}",
-                            )
-                            fig.update_traces(xbins=dict(
-                                start=float(values.min()),
-                                end=float(values.max()),
-                                size=bin_size,
-                            ))
+                    if iqr > 0:
+                        bin_width = 2 * iqr / (n ** (1 / 3))
+                        nbins = max(1, int(np.ceil(val_range / bin_width)))
+                    else:
+                        nbins = int(np.ceil(np.log2(n) + 1))
+
+                    bin_size = val_range / nbins if nbins > 0 else val_range
+                    fig = px.histogram(
+                        df,
+                        x=self.event_attribute,
+                        title=title,
+                    )
+                    fig.update_traces(xbins=dict(
+                        start=float(values.min()),
+                        end=float(values.max()),
+                        size=bin_size,
+                    ))
+
         return Plotly(figure=fig)
-            
-
