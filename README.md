@@ -1,3 +1,7 @@
+
+
+
+
 # 📦 Object-Centric Inductive Miner Plugin
 
 This repository contains an extendable **Ocelescope plugin** for analyzing **Object-Centric Event Logs (OCELs)**. Currently, the plugin provides methods to explore activity iterations per object type, as well as analyze event and object attributes over time and frequency.
@@ -20,6 +24,14 @@ This repository contains an extendable **Ocelescope plugin** for analyzing **Obj
 
 ### Iterations of Activities per Object Type
 
+https://github.com/user-attachments/assets/bb69be32-0596-4503-b41c-252eee5a9a8a
+
 ### Event Attribute Analysis
 
+https://github.com/user-attachments/assets/3bbae895-8c59-4351-8575-2ec4ab65fa1d
+
 ### Object Attribute Analysis
+
+https://github.com/user-attachments/assets/d0a849be-6f90-496d-a714-a583c17b99a9
+
+
